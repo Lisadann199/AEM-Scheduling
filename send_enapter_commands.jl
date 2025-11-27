@@ -37,7 +37,7 @@ function send_command(stack_name::String, command_name::String, value=nothing)
     end
 
     # Build payload
-    payload = Dict(
+    payload = Dict{String, Any}(
         "device_id" => STACKS[stack_name],
         "command_name" => command_name
     )
@@ -160,7 +160,7 @@ end
 
 ## SEND COMMANDS TO THE ELECTROLYZER
 run_scheduled_commands("schedule-csv-files\\very_short_test.csv")
-
+send_command("342A","set_production_rate",71.5)
 
 ############################################
 
