@@ -1,3 +1,5 @@
+check for sanity
+
 using HTTP
 using JSON
 using Dates
@@ -6,8 +8,8 @@ using DataFrames
 using Base.Threads
 using JSON3
 # === Config
-#ENAPTER_TOKEN =  "581408ee84d069773e77b51e07d8bec6c0700a9358f2cc126e63de16353b079f" # lisas token
-ENAPTER_TOKEN = "fd25d83b0d6dd1447f9454b16d22259ba2084c2d11e337587100b6fc0ddac8c7" # marius token
+ENAPTER_TOKEN =  "581408ee84d069773e77b51e07d8bec6c0700a9358f2cc126e63de16353b079f" # lisas token used for reading
+ENAPTER_TOKEN = "fd25d83b0d6dd1447f9454b16d22259ba2084c2d11e337587100b6fc0ddac8c7" # marius token used for sending commands
 #LISA2_TOKEN = "fe746a1c9426796579b1ac2a7696cd118d568df464ffaa00476b62b544c0b2a1"
 BROKER_IP = "172.18.5.105"
 COMMAND_ENDPOINT = "http://$BROKER_IP/api/commands/v1/execute"
