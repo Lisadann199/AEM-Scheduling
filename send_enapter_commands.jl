@@ -100,12 +100,15 @@ function run_scheduled_commands(filepath::String)
     df = CSV.read(filepath, DataFrame; skipto=3)
 
     # Replace missing values with empty strings
-    foreach(col ->
-        if eltype(col) <: Union{Missing, String}
-            replace!(col, missing => "")
-        end,
-        eachcol(df)
-    )
+    foreach(col -> begin
+        if eltype(col) <: Union{Missing, String} && col isa AbstractVector
+            try
+                replace!(col, missing => "")
+            catch
+                # ignore columns that cannot be replaced
+            end
+        end
+    end, eachcol(df))
 
     start_time = time()
     cumulative_duration = 0.0
