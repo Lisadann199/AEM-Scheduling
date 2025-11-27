@@ -1,7 +1,5 @@
 commands,argument,duration,342A,A568,AD7F
 start_time,now,,,,
 reset,,10,1,1,0
-preheat,,1200,1,1,0
 start,,1,1,1,0
-
-
+set_production_rate,63,300,1,1,0

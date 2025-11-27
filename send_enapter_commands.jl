@@ -201,7 +201,7 @@ plot(df.value)
 using HTTP
 
 token = "YOUR_TOKEN"
-device_id = STACKS["AD7F"]
+for device_id in [STACKS["AD7F"] STACKS["AD7F"] STACKS["342A"]]
 
 resp = HTTP.get(
     "https://api.enapter.com/telemetry/v1/now?devices[$device_id]=errors_exists",
@@ -209,6 +209,22 @@ resp = HTTP.get(
 )
 
 println(String(resp.body))
+end
+
+for device_id in [STACKS["AD7F"] STACKS["AD7F"] STACKS["342A"]]
+
+resp = HTTP.get(
+    "https://api.enapter.com/telemetry/v1/now?devices[$device_id]=production_rate",
+    ["X-Enapter-Auth-Token" => ENAPTER_TOKEN]
+)
+
+println(String(resp.body))
+end
+
+
+
+
+
 
 body = """
 {
