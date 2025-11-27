@@ -37,7 +37,7 @@ function send_command(stack_name::String, command_name::String, value=nothing)
     end
 
     # Build payload
-    payload = Dict{String, Any}(
+    payload = Dict{String,Any}(
         "device_id" => STACKS[stack_name],
         "command_name" => command_name
     )
@@ -52,45 +52,45 @@ function send_command(stack_name::String, command_name::String, value=nothing)
         "Content-Type" => "application/json"
     ]
 
-    # try
-    #     # Send POST request
-    #     response = HTTP.post(
-    #         COMMAND_ENDPOINT,
-    #         headers,
-    #         JSON.json(payload)
-    #     )
-
-    #     # Print info
-    #     timestamp = Dates.format(now(), "HH:MM:SS")
-    #     println("timestamp: Command sent: $(payload)")
-    #     println("Response: ", String(response.body))
-
-    #     # Return parsed JSON
-    #     return JSON.parse(String(response.body))
-
-    # catch e
-    #     println("Failed to send command: $e")
-    #     return nothing
-    # end
     try
-    response = HTTP.post(COMMAND_ENDPOINT, headers, JSON.json(payload))
+        # Send POST request
+        response = HTTP.post(
+            COMMAND_ENDPOINT,
+            headers,
+            JSON.json(payload)
+        )
 
-    timestamp = Dates.format(now(), "HH:MM:SS")
-
-    if response.status in 200:299
-        println("[$timestamp] ✅ Command sent successfully → $(payload)")
+        # Print info
+        timestamp = Dates.format(now(), "HH:MM:SS")
+        println("timestamp: Command sent: $(payload)")
         println("Response: ", String(response.body))
+
+        # Return parsed JSON
         return JSON.parse(String(response.body))
-    else
-        println("[$timestamp] ❌ Command failed with status $(response.status)")
-        println("Response: ", String(response.body))
-        return nothing
-    end
 
     catch e
-        println("❌ HTTP error while sending command: $e")
+        println("Failed to send command: $e")
         return nothing
     end
+    # try
+    # response = HTTP.post(COMMAND_ENDPOINT, headers, JSON.json(payload))
+
+    # timestamp = Dates.format(now(), "HH:MM:SS")
+
+    # if response.status in 200:299
+    #     println("[$timestamp] ✅ Command sent successfully → $(payload)")
+    #     println("Response: ", String(response.body))
+    #     return JSON.parse(String(response.body))
+    # else
+    #     println("[$timestamp] ❌ Command failed with status $(response.status)")
+    #     println("Response: ", String(response.body))
+    #     return nothing
+    # end
+
+    # catch e
+    #     println("❌ HTTP error while sending command: $e")
+    #     return nothing
+    # end
 
 end
 
@@ -109,7 +109,7 @@ function run_scheduled_commands(filepath::String)
             end
         end
     end, eachcol(df))
-
+    
     start_time = time()
     cumulative_duration = 0.0
 
@@ -160,7 +160,7 @@ end
 
 ## SEND COMMANDS TO THE ELECTROLYZER
 run_scheduled_commands("schedule-csv-files\\very_short_test.csv")
-send_command("342A","set_production_rate",71.5)
+send_command("342A","set_production_rate",74.5)
 
 ############################################
 
@@ -223,7 +223,20 @@ end
 
 
 
+payload = JSON3.write( Dict(
+    "device_id"     => STACKS["342A"],
+    "command_name"  => "set_production_rate",
+    "arguments"     => Dict("value" => 77.1)
+))
 
+response = HTTP.post(
+    COMMAND_ENDPOINT,
+    [
+        "X-Enapter-Auth-Token" => ENAPTER_TOKEN,
+        "Content-Type"         => "application/json"
+    ],
+    payload
+)
 
 
 body = """
