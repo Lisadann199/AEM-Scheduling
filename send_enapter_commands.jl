@@ -1,5 +1,3 @@
-check for sanity
-
 using HTTP
 using JSON
 using Dates
@@ -8,7 +6,7 @@ using DataFrames
 using Base.Threads
 using JSON3
 # === Config
-ENAPTER_TOKEN =  "581408ee84d069773e77b51e07d8bec6c0700a9358f2cc126e63de16353b079f" # lisas token used for reading
+READING_TOKEN =  "581408ee84d069773e77b51e07d8bec6c0700a9358f2cc126e63de16353b079f" # lisas token used for reading
 ENAPTER_TOKEN = "fd25d83b0d6dd1447f9454b16d22259ba2084c2d11e337587100b6fc0ddac8c7" # marius token used for sending commands
 #LISA2_TOKEN = "fe746a1c9426796579b1ac2a7696cd118d568df464ffaa00476b62b544c0b2a1"
 BROKER_IP = "172.18.5.105"
@@ -31,51 +29,6 @@ commands = Dict(
     "preheat" => false,
     "stop_preheat" => false
 )
-
-
-function send_command(stack_name::String, command_name::String, value=nothing)
-    # Check if stack exists
-    if !haskey(STACKS, stack_name)
-        throw(ArgumentError("Stack $stack_name not found."))
-    end
-
-    # Build payload
-    payload = Dict{String,Any}(
-        "device_id" => STACKS[stack_name],
-        "command_name" => command_name
-    )
-
-    if value !== nothing
-        payload["arguments"] = Dict("value" => round(Float64(value), digits=1))
-    end
-
-    # Headers
-    headers = [
-        "X-Enapter-Auth-Token" => ENAPTER_TOKEN,
-        "Content-Type" => "application/json"
-    ]
-
-    try
-        # Send POST request
-        response = HTTP.post(
-            COMMAND_ENDPOINT,
-            headers,
-            JSON.json(payload)
-        )
-
-        # Print info
-        timestamp = Dates.format(now(), "HH:MM:SS")
-        println("timestamp: Command sent: $(payload)")
-        println("Response: ", String(response.body))
-
-        # Return parsed JSON
-        return JSON.parse(String(response.body))
-
-    catch e
-        println("Failed to send command: $e")
-        return nothing
-    end
-end
 
 function send_command(stack_name::String, command_name::String, value=nothing)
     # Check if stack exists
@@ -190,207 +143,110 @@ function run_scheduled_commands(filepath::String)
 end
 
 ## SEND COMMANDS TO THE ELECTROLYZER
-run_scheduled_commands("schedule-csv-files\\very_short_test.csv")
+#run_scheduled_commands("schedule-csv-files\\very_short_test.csv")
 send_command("342A","set_production_rate",79.5)
 send_command("342A","stop")
 
 ############################################
 
-body = JSON3.write(Dict(
-    "from" => "2025-11-25T09:00:00Z",
-    "to" => "2025-11-25T17:10:59Z",
-    "granularity" => "1m",
-    "aggregation" => "avg",
-    "telemetry" => [
-        Dict(
-            "device" => STACKS["342A"],
-            "attribute" => "h2_flow"
-        )
-    ]
-))
-
-resp = HTTP.post(
-    "https://api.enapter.com/telemetry/v1/timeseries",
-    ["X-Enapter-Auth-Token" => ENAPTER_TOKEN,
-     "Content-Type" => "application/json"],
-    body
-)
-
-raw = String(resp.body)
-lines = split(raw, '\n')
-# First line contains "ts,telemetry=h2_flow ..."
-data_lines = lines[2:end]
-csv_text = "ts,value\n" * join(data_lines, '\n')
-df = CSV.read(IOBuffer(csv_text), DataFrame)
-
-df.timestamp = unix2datetime.(df.ts)
-select!(df, [:timestamp, :value])
-
-plot(df.value)
-
-
-
-using HTTP
-
-token = "YOUR_TOKEN"
-for device_id in [STACKS["AD7F"] STACKS["AD7F"] STACKS["342A"]]
-
-resp = HTTP.get(
-    "https://api.enapter.com/telemetry/v1/now?devices[$device_id]=errors_exists",
-    ["X-Enapter-Auth-Token" => ENAPTER_TOKEN]
-)
-
-println(String(resp.body))
-end
-
-for device_id in [STACKS["AD7F"] STACKS["AD7F"] STACKS["342A"]]
-
-resp = HTTP.get(
-    "https://api.enapter.com/telemetry/v1/now?devices[$device_id]=production_rate",
-    ["X-Enapter-Auth-Token" => ENAPTER_TOKEN]
-)
-
-println(String(resp.body))
-end
-
-
-
-payload = JSON3.write( Dict(
-    "device_id"     => STACKS["342A"],
-    "command_name"  => "set_production_rate",
-    "arguments"     => Dict("value" => 77.1)
-))
-
-response = HTTP.post(
-    COMMAND_ENDPOINT,
-    [
-        "X-Enapter-Auth-Token" => ENAPTER_TOKEN
-    ],
-    payload
-)
-
-
-body = """
-{
-  "from": "2025-11-25T00:00:00Z",
-  "to": "2025-11-25T23:59:59Z",
-  "granularity": "1h",
-  "aggregation": "avg",
-  "telemetry": [
-    { "device": "$device_id", "attribute": "errors_exists" }
-  ]
-}
-"""
-using MQTTClient
-using JSON3
-
-broker = "mqtt.enapter.com"
-token = ENAPTER_TOKEN
-device_id = STACKS["342A"]
-
-client = MQTTClient.Client(broker; username=token)
-
-MQTTClient.connect!(client)
-
-payload = Dict(
-    "command" => "set_production_rate",
-    "arguments" => Dict("value" => 77.1)
-)
-
-topic = "enapter/devices/$device_id/commands"
-
-MQTTClient.publish(client, topic, JSON3.write(payload))
-
-MQTTClient.disconnect!(client)
-BROKER_IP = "172.18.5.105"
-COMMAND_ENDPOINT = "http://172.18.5.105/api/commands/v1/execute"
-
-POST "http://172.18.5.105/api/commands/v1/execute" HTTP/1.1
-X-Enapter-Auth-Token: "581408ee84d069773e77b51e07d8bec6c0700a9358f2cc126e63de16353b079f"
-Content-Type: application/json
-
-{
-  "device_id": "29ee3293-8b22-4693-a031-b600d9c83c21",
-  "command_name": "set_production_rate",
-  "arguments": {
-    "value": 77
-  }
-}
-
-curl -X POST "http://172.18.5.105/api/commands/v1/execute?show_progress=true" \
-  -H 'X-Enapter-Auth-Token: 581408ee84d069773e77b51e07d8bec6c0700a9358f2cc126e63de16353b079f' \
-  -d '{
-        "device_id": "9ee3293-8b22-4693-a031-b600d9c83c21",
-        "command_name": "set_production_rate",
-        "arguments": {
-          "value": 77
-        }
-      }'
-
-
-
-      # THIS WORKED TO CHANGE THE SETPOINT:  curl -X POST "http://172.18.5.105/api/commands/v1/execute"  -H "X-Enapter-Auth-Token: fd25d83b0d6dd1447f9454b16d22259ba2084c2d11e337587100b6fc0ddac8c7" -H "Content-Type: application/json" -d "{\"device_id\":\"29ee3293-8b22-4693-a031-b600d9c83c21\",\"command_name\":\"set_production_rate\",\"arguments\":{\"value\":90}}"{"state":"succeeded","payload":{"value":90}}
-
-
-
-      using HTTP
-      using JSON3
-      
-      function set_production_rate(local_ip::String, token::String, device_id::String, value::Float64)
-          # Ensure value is in allowed range (60–100 for your device)
-          if value < 60 || value > 100
-              error("Production rate must be between 60 and 100.")
-          end
-      
-          url = "http://$local_ip/api/commands/v1/execute"
-      
-          payload = Dict(
-              "device_id" => device_id,
-              "command_name" => "set_production_rate",
-              "arguments" => Dict("value" => value)
-          )
-      
-          headers = [
-              "X-Enapter-Auth-Token" => ENAPTER_TOKEN,
-              "Content-Type" => "application/json"
-          ]
-      
-          response = HTTP.post(url; headers=headers, body=JSON3.write(payload))
-      
-          return JSON3.read(String(response.body))
-      end
-      
-
-      LOCAL_IP   = "172.18.5.105"        # your EL local IP
-
-resp = set_production_rate(LOCAL_IP, ENAPTER_TOKEN, STACKS["342A"], 80.0)
-
-println(resp)
-
-using HTTP
-using JSON
-
-function set_production_rate(local_ip::String, token::String, device_id::String, value::Float64)
-
-    url = "http://$local_ip/api/commands/v1/execute"
-
-    payload = Dict(
-        "device_id" => device_id,
-        "command_name" => "set_production_rate",
-        "arguments" => Dict("value" => value)
+function get_historic_data(READING_TOKEN;
+        device_id,
+        attribute,
+        from,
+        to,
+        granularity="1m",
+        aggregation="avg"
     )
 
-    json_body = JSON.json(payload)   # <- produces same JSON as curl -d
+    # ---- Build request body ----
+    body = JSON3.write(Dict(
+        "from" => from,
+        "to" => to,
+        "granularity" => granularity,
+        "aggregation" => aggregation,
+        "telemetry" => [
+            Dict(
+                "device" => device_id,
+                "attribute" => attribute
+            )
+        ]
+    ))
 
-    headers = [
-        ("X-Enapter-Auth-Token", token),      # <- 2-tuple is REQUIRED
-        ("Content-Type", "application/json")
-    ]
+    # ---- Send request ----
+    resp = HTTP.post(
+        "https://api.enapter.com/telemetry/v1/timeseries",
+        ["X-Enapter-Auth-Token" => READING_TOKEN,
+         "Content-Type" => "application/json"],
+        body
+    )
 
-    resp = HTTP.post(url, headers, json_body)
+    raw = String(resp.body)
 
-    return String(resp.body)
+    # ---- Parse influx-style response into CSV ----
+    lines = split(raw, '\n')
+
+    if length(lines) < 2
+        error("No data returned from Enapter")
+    end
+
+    # Skip first line (header like: "ts,telemetry=h2_flow xxx")
+    csv_lines = lines[2:end]
+    csv_text = "ts,value\n" * join(csv_lines, '\n')
+
+    # ---- Load into DataFrame ----
+    df = CSV.read(IOBuffer(csv_text), DataFrame)
+
+    # ---- Convert timestamp (no timezone correction) ----
+    df.timestamp = unix2datetime.(df.ts)
+
+    select!(df, [:timestamp, :value])
+
+    return df
 end
 
-git config --global user.name "Lisadann199"
-git config --global user.email "lisadannappel63@gmail.com"
+df = get_historic_data(
+    READING_TOKEN;
+    device_id = STACKS["342A"],
+    attribute = "h2_flow",
+    from = "2025-11-25T09:00:00Z",
+    to   = "2025-11-25T17:10:59Z",
+    granularity = "1m",
+    aggregation = "avg"
+)
+
+plot(df.timestamp, df.value)
+
+
+
+function read_measurement(device_id, measured_variable, READING_TOKEN)
+    resp = HTTP.get(
+        "https://api.enapter.com/telemetry/v1/now?devices[$device_id]=$measured_variable",
+        ["X-Enapter-Auth-Token" => READING_TOKEN]
+    )
+
+    raw = String(resp.body)   # <-- read ONCE
+
+    println("RAW = $raw")     # safe
+
+    if isempty(raw)
+        error("Empty response body")
+    end
+
+    data = JSON3.read(raw)
+
+    dev = data.devices[device_id]
+    entry = getproperty(dev, Symbol(measured_variable))
+
+    value = entry.value
+    ts = entry.timestamp
+    dt = unix2datetime(ts)   # <-- convert here
+
+    return value, dt
+end
+
+read_measurement(STACKS["342A"],"production_rate",READING_TOKEN)
+read_measurement(STACKS["342A"],"stack_cycles",READING_TOKEN)
+
+read_measurement(STACKS["342A"],"errors_exists",READING_TOKEN)
+
+read_measurement(STACKS["342A"],"status",READING_TOKEN)
