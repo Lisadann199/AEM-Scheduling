@@ -108,7 +108,7 @@ if __name__ == "__main__":
     
     #"""
     # Run scheduled commands file
-    #run_scheduled_commands("converted_commands.csv")
+    run_scheduled_commands("converted_commands.csv")
 
 
     #run_scheduled_commands("pldk_converted_commands.csv")

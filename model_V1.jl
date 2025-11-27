@@ -34,7 +34,7 @@ model = Model(Gurobi.Optimizer)
 
 @constraint(model, z1_on[1:history]==z1_on_init)
 @constraint(model, z2_on[1:history]==z2_on_init)
-@constraint(model, z3_on[1:history]==z2_on_init)
+@constraint(model, z3_on[1:history]==z3_on_init)
 
 @expression(model, z1_OFF[t=1:NT], 1 - z1_on[t])
 @expression(model, z2_OFF[t=1:NT], 1 - z2_on[t])
