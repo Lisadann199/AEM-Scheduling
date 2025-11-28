@@ -39,7 +39,7 @@ scenario = build_scenario(Power_base; P_rated=P_rated, rng=rng)
 #     lw = 2,
 # )
 
-for k in 26:28
+for k in 26
 
     status_stack_1_342A, timestamp = read_measurement(STACKS["342A"],"status",READING_TOKEN)
 
@@ -245,10 +245,13 @@ for k in 26:28
     setpoint_s1 = acc["z1_on"][1]*acc["setpoint_s1"][1]
     setpoint_s2 = acc["z2_on"][1]*acc["setpoint_s2"][1]
 
-    z1_on = acc["z1_on"][1]
-    z2_on = acc["z2_on"][1]
+    z1_on = Int(acc["z1_on"][1])
+    z2_on = Int(acc["z2_on"][1])
     println("Setpoint 342A: $setpoint_s1")
     println("Setpoint A568: $setpoint_s2")
+
+    send_command("342A", "set_production_rate", setpoint_s1)
+   # send_command("A568", "set_production_rate", setpoint_s2)
 
     action_taken = false
 
