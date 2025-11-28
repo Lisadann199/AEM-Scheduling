@@ -11,6 +11,9 @@ function Model_V2(
     P_s1_init::Vector{<:Float64} = 0.0,
     P_s2_init::Vector{<:Float64} = 0.0,
     P_s3_init::Vector{<:Float64} = 0.0,
+    setpoint_s1_init::Vector{<:Float64} = 0.0,
+    setpoint_s2_init::Vector{<:Float64} = 0.0,
+    setpoint_s3_init::Vector{<:Float64} = 0.0,
     # component-specific SoH values 
     soh1_ramping_init::Float64 = 100.0,
     soh2_ramping_init::Float64 = 100.0,
@@ -54,12 +57,12 @@ model = Model(Gurobi.Optimizer)
 @variable(model, 0 <= P_s3[t=1:NT] <= ElCap)
 
 # Initial power conditions:
-@constraint(model,[t=1:history], P_s1[t] == P_s1_init[t])
-@constraint(model,[t=1:history], P_s2[t] == P_s2_init[t])
-@constraint(model,[t=1:history], P_s3[t] == P_s3_init[t])
+@constraint(model, P_s1[1:history] == P_s1_init)
+@constraint(model, P_s2[1:history] == P_s2_init)
+@constraint(model, P_s3[1:history] == P_s3_init)
 
 # === Power balance constraint ===
-@constraint(model, [t=1:NT], P_s1[t] + P_s2[t] + P_s3[t] <= Power[t])
+@constraint(model, [t=2:NT], P_s1[t] + P_s2[t] + P_s3[t] <= Power[t-1])
 
 # === Setpoints ===
 @variable(model, 0 <= setpoint_s1[t=1:NT] <= 100)   # in percent (60–100)

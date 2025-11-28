@@ -56,7 +56,7 @@ soh2_fluct_init = 9000.0
 soh3_fluct_init = 9000.0
 
 err1 = false   # Stack 1 OK
-err2 = true   # Stack 2 OK
+err2 = true   # Stack 2 error
 err3 = false   # Stack 3 OK
 
 begin

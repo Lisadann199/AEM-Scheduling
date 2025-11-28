@@ -6,11 +6,11 @@ using DataFrames
 using Base.Threads
 using JSON3
 # === Config
-READING_TOKEN =  "581408ee84d069773e77b51e07d8bec6c0700a9358f2cc126e63de16353b079f" # lisas token used for reading
-ENAPTER_TOKEN = "fd25d83b0d6dd1447f9454b16d22259ba2084c2d11e337587100b6fc0ddac8c7" # marius token used for sending commands
+const READING_TOKEN =  "581408ee84d069773e77b51e07d8bec6c0700a9358f2cc126e63de16353b079f" # lisas token used for reading
+const SEND_TOKEN = "fd25d83b0d6dd1447f9454b16d22259ba2084c2d11e337587100b6fc0ddac8c7" # marius token used for sending commands
 #LISA2_TOKEN = "fe746a1c9426796579b1ac2a7696cd118d568df464ffaa00476b62b544c0b2a1"
-BROKER_IP = "172.18.5.105"
-COMMAND_ENDPOINT = "http://$BROKER_IP/api/commands/v1/execute"
+const BROKER_IP = "172.18.5.105"
+const COMMAND_ENDPOINT = "http://$BROKER_IP/api/commands/v1/execute"
 
 # === Device IDs for each stack
 STACKS = Dict(
@@ -48,7 +48,7 @@ function send_command(stack_name::String, command_name::String, value=nothing)
 
     # Headers
     headers = [
-        "X-Enapter-Auth-Token" => ENAPTER_TOKEN,
+        "X-Enapter-Auth-Token" => SEND_TOKEN,
         "Content-Type" => "application/json"
     ]
 
@@ -78,74 +78,74 @@ function send_command(stack_name::String, command_name::String, value=nothing)
     end
 end
 
-function run_scheduled_commands(filepath::String)
+# function run_scheduled_commands(filepath::String)
 
-    # Read CSV (skip 2nd row like Python skiprows=[1])
-    df = CSV.read(filepath, DataFrame; skipto=3)
+#     # Read CSV (skip 2nd row like Python skiprows=[1])
+#     df = CSV.read(filepath, DataFrame; skipto=3)
 
-    # Replace missing values with empty strings
-    foreach(col -> begin
-        if eltype(col) <: Union{Missing, String} && col isa AbstractVector
-            try
-                replace!(col, missing => "")
-            catch
-                # ignore columns that cannot be replaced
-            end
-        end
-    end, eachcol(df))
+#     # Replace missing values with empty strings
+#     foreach(col -> begin
+#         if eltype(col) <: Union{Missing, String} && col isa AbstractVector
+#             try
+#                 replace!(col, missing => "")
+#             catch
+#                 # ignore columns that cannot be replaced
+#             end
+#         end
+#     end, eachcol(df))
     
-    start_time = time()
-    cumulative_duration = 0.0
+#     start_time = time()
+#     cumulative_duration = 0.0
 
-    for row in eachrow(df)
-        # Parse duration or default to 0
-        if row[:duration] == "" || row[:duration] === missing
-            duration = 0.0
-        elseif isa(row[:duration], String)
-            duration = parse(Float64, row[:duration])
-        else
-            duration = Float64(row[:duration])
-        end
-                cumulative_duration += duration
+#     for row in eachrow(df)
+#         # Parse duration or default to 0
+#         if row[:duration] == "" || row[:duration] === missing
+#             duration = 0.0
+#         elseif isa(row[:duration], String)
+#             duration = parse(Float64, row[:duration])
+#         else
+#             duration = Float64(row[:duration])
+#         end
+#                 cumulative_duration += duration
 
-        # Loop through columns except excluded ones
-        for col in names(df)
-            if col in ["duration", "commands", "argument"]
-                continue
-            end
+#         # Loop through columns except excluded ones
+#         for col in names(df)
+#             if col in ["duration", "commands", "argument"]
+#                 continue
+#             end
 
-            if strip(string(row[col])) == "1"
-                stack_name = uppercase(strip(col))
-                command_name = row[:commands]
-                argument = row[:argument]
+#             if strip(string(row[col])) == "1"
+#                 stack_name = uppercase(strip(col))
+#                 command_name = row[:commands]
+#                 argument = row[:argument]
 
-                # Convert argument or use nothing
-                arg_value = (argument === missing || argument == "") ? nothing :
-                    (isa(argument, String) ? parse(Float64, argument) : Float64(argument))
+#                 # Convert argument or use nothing
+#                 arg_value = (argument === missing || argument == "") ? nothing :
+#                     (isa(argument, String) ? parse(Float64, argument) : Float64(argument))
 
-                # Print what will be sent
-                println("Sending to $stack_name → $command_name", 
-                        arg_value === nothing ? "" : " (value = $arg_value)")
+#                 # Print what will be sent
+#                 println("Sending to $stack_name → $command_name", 
+#                         arg_value === nothing ? "" : " (value = $arg_value)")
 
-                # Run send_command in a separate thread
-                @spawn send_command(stack_name, command_name, arg_value)
-            end
-        end
+#                 # Run send_command in a separate thread
+#                 @spawn send_command(stack_name, command_name, arg_value)
+#             end
+#         end
 
-        # Wait until cumulative time is reached
-        elapsed = time() - start_time
-        remaining = cumulative_duration - elapsed
-        if elapsed < cumulative_duration
-            println("Waiting $(round(remaining, digits=2)) seconds until next command...")
-            sleep(cumulative_duration - elapsed)
-        end
-    end
-end
+#         # Wait until cumulative time is reached
+#         elapsed = time() - start_time
+#         remaining = cumulative_duration - elapsed
+#         if elapsed < cumulative_duration
+#             println("Waiting $(round(remaining, digits=2)) seconds until next command...")
+#             sleep(cumulative_duration - elapsed)
+#         end
+#     end
+# end
 
 ## SEND COMMANDS TO THE ELECTROLYZER
 #run_scheduled_commands("schedule-csv-files\\very_short_test.csv")
-send_command("342A","set_production_rate",79.5)
-send_command("342A","stop")
+# send_command("342A","set_production_rate",79.5)
+# send_command("342A","stop")
 
 ############################################
 
@@ -244,9 +244,7 @@ function read_measurement(device_id, measured_variable, READING_TOKEN)
     return value, dt
 end
 
-read_measurement(STACKS["342A"],"production_rate",READING_TOKEN)
-read_measurement(STACKS["342A"],"stack_cycles",READING_TOKEN)
-
-read_measurement(STACKS["342A"],"errors_exists",READING_TOKEN)
-
-read_measurement(STACKS["342A"],"status",READING_TOKEN)
+# read_measurement(STACKS["342A"],"production_rate",READING_TOKEN)
+# read_measurement(STACKS["342A"],"stack_cycles",READING_TOKEN)
+# read_measurement(STACKS["342A"],"errors_exists",READING_TOKEN)
+# read_measurement(STACKS["342A"],"status",READING_TOKEN)
