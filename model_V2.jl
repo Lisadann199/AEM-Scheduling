@@ -87,7 +87,7 @@ model = Model(Gurobi.Optimizer)
 # === linear fit for power consumption curve ===
 a = 0.0250818060738514
 b = -0.1901347621495934
-min_power = (a * 60+ b)
+min_power = (a * 58+ b)
 # === STACK LOGIC ===
 @constraint(model, [t=1:NT], P_s1[t] >= min_power* z1_on[t])
 @constraint(model, [t=1:NT], P_s2[t] >= min_power* z2_on[t])
