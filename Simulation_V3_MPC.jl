@@ -31,7 +31,7 @@ scenario = build_scenario(Power_base; P_rated=P_rated, rng = rng)
 
 NT = 288  # horizon
 const MPC_PERIOD = Minute(5)  # 5 minute clock
-MAX_ITER = 10          # 4 hours at 5 min per iteration
+MAX_ITER = 48      # 4 hours at 5 min per iteration
 iter_count = 0
 
 # weights
@@ -368,9 +368,6 @@ while iter_count < MAX_ITER
 
 end
 
-all_results
-
-using DataFrames, CSV
 
 rows = Vector{NamedTuple}()
 
@@ -442,7 +439,7 @@ for k in sort(collect(keys(all_results)))
 end
 
 df = DataFrame(rows)
-CSV.write("mpc_results_long_with_measured.csv", df)
+CSV.write("mpc_results_4hour_test_0112.csv", df)
 
 println("Saved mpc_results_long_with_measured.csv")
 println("===== MPC FINISHED OR STOPPED EARLY AT $(now()) =====")
