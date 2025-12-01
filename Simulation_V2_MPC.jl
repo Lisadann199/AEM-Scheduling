@@ -8,7 +8,7 @@ include("model_V2.jl")
 include("helper_functions.jl")
 include("send_enapter_commands.jl")
 ElCap = 2.4 #kW
-Power_base = scale_to_range(df_aus.BLUFF1, ElCap);
+Power_base = scale_to_range(df_aus.BLUFF1, (2/3)*ElCap);
 
 include("windprofile_module_V2.jl")
 
@@ -39,7 +39,7 @@ scenario = build_scenario(Power_base; P_rated=P_rated, rng=rng)
 #     lw = 2,
 # )
 
-for k in 25:28
+for k in 40:88
 
     status_stack_1_342A, timestamp = read_measurement(STACKS["342A"],"status",READING_TOKEN)
 
@@ -304,7 +304,7 @@ for k in 25:28
     end
 
     if ! action_taken
-        error("NOTHING HAPPENED")
+        println("NOTHING HAPPENED")
     end
         println("Waiting 5 minutes...")
         sleep(5*60 )   # pause 5 minutes
