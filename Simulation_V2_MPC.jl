@@ -38,8 +38,9 @@ scenario = build_scenario(Power_base; P_rated=P_rated, rng=rng)
 #     label = "Actual",
 #     lw = 2,
 # )
+all_results = Dict{Int,Dict}()
 
-for k in 40:88
+for k in 42:90
 
     status_stack_1_342A, timestamp = read_measurement(STACKS["342A"],"status",READING_TOKEN)
 
@@ -119,6 +120,34 @@ for k in 40:88
     soh2_fluct_init = 9000.0
     soh3_fluct_init = 9000.0
 
+    measured = Dict(
+    "status_stack_1_342A" => status_stack_1_342A,
+    "status_stack_2_A568" => status_stack_2_A568,
+    "status_stack_3_AD7F" => status_stack_3_AD7F,
+
+    "err1" => err1,
+    "err2" => err2,
+    "err3" => err3,
+
+    "stack_1_voltage" => stack_1_voltage,
+    "stack_1_current" => stack_1_current,
+    "stack_2_voltage" => stack_2_voltage,
+    "stack_2_current" => stack_2_current,
+    "stack_3_voltage" => stack_3_voltage,
+    "stack_3_current" => stack_3_current,
+
+    "production_rate_s1_342A" => production_rate_s1_342A,
+    "production_rate_s2_A568" => production_rate_s2_A568,
+    "production_rate_s3_AD7F" => production_rate_s3_AD7F,
+
+    "stack_cycles_s1_342A" => stack_cycles_s1_342A,
+    "stack_cycles_s2_A568" => stack_cycles_s2_A568,
+    "stack_cycles_s3_AD7F" => stack_cycles_s3_AD7F,
+
+    "h2_total_s1_342A" => h2_total_s1_342A,
+    "h2_total_s2_A568" => h2_total_s2_A568,
+    "h2_total_s3_AD7F" => h2_total_s3_AD7F,
+)
     NT = 72
     Power_wind = forecast_window(scenario, k, NT)
 
@@ -306,6 +335,17 @@ for k in 40:88
     if ! action_taken
         println("NOTHING HAPPENED")
     end
+
+    all_results[k] = Dict(
+    "measured" => measured,
+    "model_outputs" => deepcopy(dict3),
+    "z1_on_init" => z1_on_init,
+    "z2_on_init" => z2_on_init,
+    "z3_on_init" => z3_on_init,
+    "timestamp" => timestamp,   # if you want it
+    "status" => status,
+)
+
         println("Waiting 5 minutes...")
         sleep(5*60 )   # pause 5 minutes
 
