@@ -57,9 +57,9 @@ model = Model(Gurobi.Optimizer)
 @variable(model, 0 <= P_s3[t=1:NT] <= ElCap)
 
 # Initial power conditions:
-@constraint(model, P_s1[1:history] == P_s1_init)
-@constraint(model, P_s2[1:history] == P_s2_init)
-@constraint(model, P_s3[1:history] == P_s3_init)
+# @constraint(model, P_s1[1:history] == P_s1_init)
+# @constraint(model, P_s2[1:history] == P_s2_init)
+# @constraint(model, P_s3[1:history] == P_s3_init)
 
 # === Power balance constraint ===
 @constraint(model, [t=2:NT], P_s1[t] + P_s2[t] + P_s3[t] <= Power[t-1])
@@ -97,6 +97,12 @@ min_power = (a * 58+ b)
 @constraint(model, [t=1:NT], P_s2[t] <= ElCap * z2_on[t])
 @constraint(model, [t=1:NT], P_s3[t] <= ElCap * z3_on[t])
 
+# @constraint(model, [t=history+1:NT], P_s1[t] == (a * setpoint_s1[t] + b))
+# @constraint(model, [t=history+1:NT], P_s2[t] == (a * setpoint_s2[t] + b))
+# @constraint(model, [t=history+1:NT], P_s3[t] == (a * setpoint_s3[t] + b))
+# @constraint(model, [t=1:NT], P_s1[t] == (a * setpoint_s1[t] + b)*z1_on[t])
+# @constraint(model, [t=1:NT], P_s2[t] == (a * setpoint_s2[t] + b)*z2_on[t])
+# @constraint(model, [t=1:NT], P_s3[t] == (a * setpoint_s3[t] + b)*z3_on[t])
 @constraint(model, [t=history+1:NT], P_s1[t] == (a * setpoint_s1[t] + b))
 @constraint(model, [t=history+1:NT], P_s2[t] == (a * setpoint_s2[t] + b))
 @constraint(model, [t=history+1:NT], P_s3[t] == (a * setpoint_s3[t] + b))
@@ -230,20 +236,23 @@ M = 2 * ElCap   # safe since max change between two steps is between -ElCap and 
 
 # === Component-wise SOH variables (worst per degradation type) ===
 @variable(model, SOH_ramping)
-@constraint(model, SOH_ramping <= soh1_ramping)
-@constraint(model, SOH_ramping <= soh2_ramping)
-@constraint(model, SOH_ramping <= soh3_ramping)
-
-
 @variable(model, SOH_run)
-@constraint(model, SOH_run <= soh1_run)
-@constraint(model, SOH_run <= soh2_run)
-@constraint(model, SOH_run <= soh3_run)
-
 @variable(model, SOH_fluct)
-@constraint(model, SOH_fluct <= soh1_fluct)
-@constraint(model, SOH_fluct <= soh2_fluct)
-@constraint(model, SOH_fluct <= soh3_fluct)
+if !err1      # “if err1 is false”
+    @constraint(model, SOH_ramping <= soh1_ramping)
+    @constraint(model, SOH_run <= soh1_run)
+    @constraint(model, SOH_fluct <= soh1_fluct)
+end
+if !err2
+    @constraint(model, SOH_ramping <= soh2_ramping)
+    @constraint(model, SOH_run <= soh2_run)
+    @constraint(model, SOH_fluct <= soh2_fluct)
+end
+if !err3
+    @constraint(model, SOH_ramping <= soh3_ramping)
+    @constraint(model, SOH_run <= soh3_run)
+    @constraint(model, SOH_fluct <= soh3_fluct)
+end
 
 # === Objective: Maximize Hydrogen Production ===
 @objective(model, Max,

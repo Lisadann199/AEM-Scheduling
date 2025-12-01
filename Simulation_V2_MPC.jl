@@ -39,30 +39,36 @@ scenario = build_scenario(Power_base; P_rated=P_rated, rng=rng)
 #     lw = 2,
 # )
 
-for k in 26
+for k in 25:28
 
     status_stack_1_342A, timestamp = read_measurement(STACKS["342A"],"status",READING_TOKEN)
 
     if status_stack_1_342A == "steady"
         z1_on_init = [1]
-    else
+    elseif status_stack_1_342A =="idle"
         z1_on_init = [0]
+    else  
+        println("ERROR: Unknown stack status: $status_stack_1_342A")
     end
 
     status_stack_2_A568, timestamp = read_measurement(STACKS["A568"],"status",READING_TOKEN)
 
     if status_stack_2_A568 == "steady"
         z2_on_init = [1]
-    else
+    elseif status_stack_2_A568 == "idle"
         z2_on_init = [0]
+    else 
+        println("ERROR: Unknown stack status: $status_stack_2_A568")
     end
 
     status_stack_3_AD7F, timestamp = read_measurement(STACKS["AD7F"],"status",READING_TOKEN)
 
     if status_stack_3_AD7F == "steady"
         z3_on_init = [1]
-    else
+    elseif status_stack_3_AD7F == "idle"
         z3_on_init = [0]
+    else 
+        println("ERROR: Unknown stack status: $status_stack_3_AD7F")
     end
 
     err1, _ = read_measurement(STACKS["342A"],"errors_exists",READING_TOKEN)
@@ -113,15 +119,13 @@ for k in 26
     soh2_fluct_init = 9000.0
     soh3_fluct_init = 9000.0
 
-
-
     NT = 72
     Power_wind = forecast_window(scenario, k, NT)
 
     acc = Dict{String, Vector{Any}}()  
     dict3=Dict{String, Vector{Float64}}()
-    w1 = 1.0
-    w2 = 100.0
+    w1 = 100.0
+    w2 = 1.0
     inner_scenarios = [(0.9,0.005,0.005)] #C2
     w3, w4, w5 = inner_scenarios[1]
 
@@ -245,48 +249,56 @@ for k in 26
     setpoint_s1 = acc["z1_on"][1]*acc["setpoint_s1"][1]
     setpoint_s2 = acc["z2_on"][1]*acc["setpoint_s2"][1]
 
-    z1_on = Int(acc["z1_on"][1])
-    z2_on = Int(acc["z2_on"][1])
+    z1_on = Int(acc["z1_on"][2])
+    z2_on = Int(acc["z2_on"][2])
     println("Setpoint 342A: $setpoint_s1")
     println("Setpoint A568: $setpoint_s2")
 
-    send_command("342A", "set_production_rate", setpoint_s1)
+    #send_command("342A", "set_production_rate", setpoint_s1)
    # send_command("A568", "set_production_rate", setpoint_s2)
 
     action_taken = false
 
-    if z1_on_init == 1 && z1_on == 1
+    if z1_on_init == [1] && z1_on == 1
         if setpoint_s1 >= 60 && setpoint_s1 <= 100
             send_command("342A", "set_production_rate", setpoint_s1)
+            println("set production rate stack 342A $setpoint_s1")
             action_taken = true
         end
 
-    elseif z1_on_init == 1 && z1_on == 0
+    elseif z1_on_init == [1] && z1_on == 0
         send_command("342A", "stop")
+         println("stopped stack 342A")
         action_taken = true
-    elseif z1_on_init == 0 && z1_on == 1
+    elseif z1_on_init == [0] && z1_on == 1
         if setpoint_s1 >= 60 && setpoint_s1 <= 100
             send_command("342A", "start")
+             println("started stack 342A")
             send_command("342A", "set_production_rate", setpoint_s1)
+            println("set production rate stack 342A $setpoint_s1")
             action_taken = true
         end
     end
 
 
-    if z2_on_init == 1 && z2_on == 1
+    if z2_on_init == [1] && z2_on == 1
         if setpoint_s2 >= 60 && setpoint_s2 <= 100
             send_command("A568", "set_production_rate", setpoint_s2)
+             println("set production rate stack A568 $setpoint_s2")
             action_taken = true
         end
 
-    elseif z2_on_init == 1 && z2_on == 0
+    elseif z2_on_init == [1] && z2_on == 0
         send_command("A568", "stop")
+        println("stopped stack A568")
         action_taken = true
 
-    elseif z2_on_init == 0 && z2_on == 1
+    elseif z2_on_init == [0] && z2_on == 1
         if setpoint_s2 >= 60 && setpoint_s2 <= 100
             send_command("A568", "start")
+             println("started stack A568")
             send_command("A568", "set_production_rate", setpoint_s2)
+            println("set production rate stack A568 $setpoint_s2")
             action_taken = true
         end
     end
